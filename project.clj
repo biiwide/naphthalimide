@@ -1,13 +1,21 @@
-(defproject naphthalimide "0.0.1-SNAPSHOT"
+(defproject biiwide/naphthalimide "0.0.1-SNAPSHOT"
 
-  :description "FIXME: write description"
+  :description "Idomatic OpenTracing"
 
-  :url "http://example.com/FIXME"
+  :url "https://github.com/biiwide/naphthalimide"
 
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :license {:name "Eclipse Public License 2.0"
+            :url "https://www.eclipse.org/legal/epl-2.0"}
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [io.opentracing/opentracing-api "0.31.0"]
-                 [io.opentracing/opentracing-util "0.31.0"]]
+  :dependencies [[io.opentracing/opentracing-api "0.31.0"]
+                 [io.opentracing/opentracing-util "0.31.0"]
+                 [org.clojure/clojure "1.8.0"]
+                 [potemkin "0.4.5"]
+                 ]
+
+  :global-vars {*warn-on-reflection* true}
+  
+  :profiles {:dev {:dependencies [[io.opentracing/opentracing-mock "0.31.0"]]
+                   }}
+  
   )
