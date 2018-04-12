@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [defn- defn fn fn*])
   (:require [clojure.core :as clj]
             [naphthalimide.alpha.span :as span]
-            [naphthalimide.alpha.tracer]
+            [naphthalimide.alpha.tracer :as tracer]
             [potemkin :refer [import-vars]]))
 
 
@@ -12,9 +12,19 @@
 
 
 (clj/defn- destruct-syms
-  [x]
-  (cond (symbol? x) [x]
-        (coll? x)   (mapcat destruct-syms x)))
+  [binding]
+  (remove #{'&}
+          ((clj/fn syms [x]
+             (cond (symbol? x) [x]
+                   (coll? x)   (mapcat syms x)))
+            binding)))
+
+
+
+(clj/defn- meta-from
+  [expr meta-source]
+  (vary-meta expr merge
+             (meta meta-source)))
 
 
 (clj/defmacro span
@@ -33,18 +43,14 @@ The tag names will be available for use within the body."
                           (vals (meta &form)))
         ns-meta   {"source.ns"   (name (ns-name *ns*))
                    "source.file" *file*}]
-    `(let [~@tag-bindings
+    `(let [~@(remove #{'&} tag-bindings)
            tags# ~(merge form-meta ns-meta
                          (zipmap (map name tag-names)
-                                 tag-names))
-           span# (span/start ~(name span-name)
-                             (span/tags tags#))]
-       (try (let [result# (do ~@body)]
-              (span/finish! span#)
-              result#)
-         (catch Throwable t#
-           (span/fail-with! span# t#)
-           (throw t#))))))
+                                 tag-names))]
+       (span/within-scope (span/start ~(name span-name)
+                                      (span/child-of (tracer/active-span))
+                                      (span/tags tags#))
+         ~@body))))
 
 
 (clj/defn- parse-fn
@@ -64,18 +70,55 @@ The tag names will be available for use within the body."
           "Traced Functions must have a name")
   (let [{:keys [prelude arities]}
         (parse-fn (cons fn-name fn-form))]
-    `(clj/fn ~@prelude
-       ~@(for [[argv & body] arities]
-           `(~argv
-              (span ~fn-name ~(vec (mapcat (partial repeat 2) argv))
-                    ~@body))))))
+    (meta-from
+      `(clj/fn ~@prelude
+         ~@(for [arity arities]
+             (let [[argv & body] arity]
+               (meta-from `(~argv
+                             ~(meta-from `(span ~fn-name ~(vec (mapcat (partial repeat 2)
+                                                                       (destruct-syms argv)))
+                                                ~@body)
+                                         arity))
+                          arity))))
+      &form)))
 
 
 (clj/defmacro defn
   [name & defn-form]
   (let [{:keys [prelude arities]}
         (parse-fn (cons name defn-form))]
-    `(def ~@prelude
-       (fn ~name ~@arities))))
+    (meta-from `(def ~@prelude
+                  ~(meta-from `(fn ~name ~@arities) &form))
+               &form)))
 
-    
+
+
+(comment
+  ;; Register the Jaeger Tracer
+  (register-global-tracer!
+    (-> (com.uber.jaeger.Configuration. "testing")
+        (.withSampler (-> (com.uber.jaeger.Configuration$SamplerConfiguration.)
+                          (.withType "const")
+                          (.withParam 1)))
+        (.withReporter (-> (com.uber.jaeger.Configuration$ReporterConfiguration.)
+                           (.withLogSpans true)
+                           (.withFlushInterval (int 1000))
+                           (.withMaxQueueSize (int 10000))
+                           (.withSender (-> (com.uber.jaeger.Configuration$SenderConfiguration.)
+                                            (.withAgentHost "127.0.0.1")
+                                            (.withAgentPort (int 5775))))))
+        (.getTracer)))
+
+  ;; Sample Recursive functions with randomized
+  ;; execution time.
+  (let [f1 (fn f1 [a b]
+             (Thread/sleep (rand-int 50))
+             (+ a b))
+         f2 (fn f2 ([] 0)
+                   ([a] a)
+                   ([a b] (f1 a b))
+                   ([a b & more]
+                     (reduce f2 a (cons b more))))]
+     (f2 1 2 3 4 5 6 7))
+
+  )

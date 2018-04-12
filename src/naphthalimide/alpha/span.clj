@@ -1,8 +1,10 @@
 (ns naphthalimide.alpha.span
   (:refer-clojure :exclude [boolean?])
-  (:require [naphthalimide.alpha.tracer :refer [global-tracer]])
-  (:import  [io.opentracing References Span SpanContext
-                            Tracer Tracer$SpanBuilder]
+  (:require [naphthalimide.alpha.tracer
+             :refer [activate global-tracer]])
+  (:import  (io.opentracing References Scope 
+                            Span SpanContext
+                            Tracer Tracer$SpanBuilder)
             ))
 
 
@@ -90,10 +92,10 @@ Example:
 
 
 (defn referencing [relationship span-or-context]
-  (let [rel-name (name relationship)
-        ctxt     (context-of span-or-context)]
+  (if-some [ctxt (context-of span-or-context)]
     (fn [^Tracer$SpanBuilder builder]
-      (.addReference builder rel-name ctxt))))
+      (.addReference builder (name relationship) ctxt))
+    identity))
 
 
 (defn child-of [parent]
@@ -120,17 +122,26 @@ Example:
                      modifiers)))
 
 
-(definline finish!
-  "Finish a Span.
-Can only be performed once.
-Subsequent attempts will be ignored."
+(defn finish!
   [^Span span]
-  `(.finish ^Span ~span))
+  (do (.finish span) span))
 
 
 (defn fail-with!
   "Finish a Span and mark it as an error."
   [^Span span ^Throwable exception]
   (log! span exception)
-  (set-tag! span :error true)
-  (finish! span))
+  (set-tag! span :error true))
+
+
+(defmacro within-scope
+  [span & body]
+  `(let [^Span span#   ~span
+         ^Scope scope# (activate span#)]
+     (try (do ~@body)
+       (catch Throwable t#
+         (fail-with! span# t#)
+         (throw t#))
+       (finally
+         (.close scope#)))))
+

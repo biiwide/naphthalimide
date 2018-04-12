@@ -1,7 +1,7 @@
 (ns naphthalimide.alpha.tracer
-  (:import  [io.opentracing Tracer]
-            [io.opentracing.util GlobalTracer]
-            ))
+  (:import (io.opentracing ScopeManager Span Tracer)
+           (io.opentracing.util GlobalTracer)
+           ))
 
 (def ^:dynamic *tracer* nil)
 
@@ -9,7 +9,8 @@
 (definline register-global-tracer!
   "Registers a tracer as the default global tracer."
   [tracer]
-  `(GlobalTracer/register ~tracer))
+  `(do (GlobalTracer/register ~tracer)
+       ~tracer))
 
 
 (defn ^io.opentracing.Tracer global-tracer
@@ -24,5 +25,33 @@
   [tracer & body]
   `(do (assert (instance? Tracer ~tracer)
                ~(format "%s must be an instance of io.opentracing Tracer!" (pr-str tracer)))
-       (binding [*tracer* tracer]
+       (binding [*tracer* ~tracer]
          ~@body)))
+
+
+(defn ^ScopeManager scope-manager
+  ([] (scope-manager (global-tracer)))
+  ([^Tracer tracer]
+    (.scopeManager tracer)))
+
+
+(defn ^Span active-span
+  ([] (active-span (global-tracer)))
+  ([^Tracer tracer]
+    (.activeSpan tracer)))
+
+
+(defn activate
+  ([span] (activate (global-tracer) span))
+  ([^Tracer tracer ^Span span]
+    (.activate (scope-manager tracer)
+               span
+               true)))
+
+
+(defn activate-async
+  ([span] (activate (global-tracer) span))
+  ([^Tracer tracer ^Span span]
+    (.activate (scope-manager tracer)
+               span
+               false)))
