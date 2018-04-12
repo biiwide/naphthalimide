@@ -18,5 +18,12 @@
   :profiles {:dev {:dependencies [[io.opentracing/opentracing-mock "0.31.0"]
                                   [com.uber.jaeger/jaeger-core "0.26.0"]]
                    }}
-  
+  :release-tasks [["vcs" "assert-committed"]
+                  ["change" "version" "leiningen.release/bump-version" "release"]
+                  ["vcs" "commit"]
+                  ["vcs" "tag" "--no-sign"]
+                  ["deploy"]
+                  ["change" "version" "leiningen.release/bump-version"]
+                  ["vcs" "commit"]
+                  ["vcs" "push"]]  
   )
