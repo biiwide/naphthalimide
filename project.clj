@@ -15,7 +15,8 @@
 
   :global-vars {*warn-on-reflection* true}
   
-  :profiles {:dev {:dependencies [[io.opentracing/opentracing-mock "0.31.0"]]
+  :profiles {:dev {:dependencies [[io.opentracing/opentracing-mock "0.31.0"]
+                                  [com.uber.jaeger/jaeger-core "0.26.0"]]
                    }}
   
   )
