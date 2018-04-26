@@ -10,57 +10,61 @@
   []
   (MockTracer.))
 
+(defprotocol ToMap
+  (to-map [x]))
 
-(defn- context->
-  [^MockSpan$MockContext ctxt]
-  (cond-> {:trace-id (.traceId ctxt)
-           :span-id  (.spanId ctxt)}
-    (not (empty? (.baggageItems ctxt)))
-    (assoc :baggage  (into {} (.baggageItems ctxt)))))
+(extend-type MockSpan$MockContext
+  ToMap
+  (to-map [^MockSpan$MockContext ctxt]
+    (cond-> {:trace-id (.traceId ctxt)
+             :span-id  (.spanId ctxt)}
+      (not (empty? (.baggageItems ctxt)))
+      (assoc :baggage  (into {} (.baggageItems ctxt))))))
   
 
-(defn- log-entry->
-  [^MockSpan$LogEntry entry]
-  {:timestamp-micros (.timestampMicros entry)
-   :fields           (into {} (.fields entry))})
+(extend-type MockSpan$LogEntry
+  ToMap
+  (to-map [^MockSpan$LogEntry entry]
+    {:timestamp-micros (.timestampMicros entry)
+     :fields           (into {} (.fields entry))}))
 
 
-(defn- reference->
-  [^MockSpan$Reference ref]
-  {:reference-type (.getReferenceType ref)
-   :context        (context-> (.getContext ref))})
+(extend-type MockSpan$Reference
+  ToMap
+  (to-map [^MockSpan$Reference ref]
+    {:reference-type (.getReferenceType ref)
+     :context        (to-map (.getContext ref))}))
 
 
-(defn- mock-span->
-  [^MockSpan span]
-  (cond-> {:operation     (.operationName span)
-           :context       (context-> (.context span))
-           :start-micros  (.startMicros span)
-           :finish-micros (.finishMicros span)
-           :tags          (let [tags (.tags span)]
-                            (zipmap (map keyword (keys tags))
-                                    (vals tags)))
-           :trace-id      (.traceId (.context span))}
+(extend-type MockSpan
+  ToMap
+  (to-map [^MockSpan span]
+    (cond-> {:operation     (.operationName span)
+             :context       (to-map (.context span))
+             :start-micros  (.startMicros span)
+             :finish-micros (.finishMicros span)
+             :tags          (let [tags (.tags span)]
+                              (zipmap (map keyword (keys tags))
+                                      (vals tags)))
+             :trace-id      (.traceId (.context span))}
 
-    (not (zero? (.parentId span)))
-    (assoc :parent-id (.parentId span))
+      (not (zero? (.parentId span)))
+      (assoc :parent-id (.parentId span))
 
-    (not (empty? (.logEntries span)))
-    (assoc :log       (map log-entry->
-                           (.logEntries span)))
+      (not (empty? (.logEntries span)))
+      (assoc :log (map to-map (.logEntries span)))
 
-    (not (empty? (.references span)))
-    (assoc :references    (map reference->
-                               (.references span)))
+      (not (empty? (.references span)))
+      (assoc :references (map to-map (.references span)))
 
-    (not (empty? (.generatedErrors span)))
-    (assoc :generated-errors (.generatedErrors span))
-    ))
+      (not (empty? (.generatedErrors span)))
+      (assoc :generated-errors (.generatedErrors span))
+      )))
 
 
 (defn finished-spans
   [^MockTracer tracer]
-  (mapv mock-span->
+  (mapv to-map
         (.finishedSpans tracer)))
 
 

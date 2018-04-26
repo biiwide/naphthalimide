@@ -30,19 +30,15 @@
 
 
 (defn ^ScopeManager scope-manager
-  ([] (scope-manager (global-tracer)))
+  ([]
+    (scope-manager (global-tracer)))
   ([^Tracer tracer]
     (.scopeManager tracer)))
 
 
-(defn ^Span active-span
-  ([] (active-span (global-tracer)))
-  ([^Tracer tracer]
-    (.activeSpan tracer)))
-
-
 (defn activate
-  ([span] (activate (global-tracer) span))
+  ([span]
+    (activate (global-tracer) span))
   ([^Tracer tracer ^Span span]
     (.activate (scope-manager tracer)
                span
@@ -50,8 +46,10 @@
 
 
 (defn activate-async
-  ([span] (activate (global-tracer) span))
+  ([span]
+    (activate (global-tracer) span))
   ([^Tracer tracer ^Span span]
     (.activate (scope-manager tracer)
                span
                false)))
+
