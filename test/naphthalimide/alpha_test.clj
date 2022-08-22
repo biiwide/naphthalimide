@@ -1,10 +1,10 @@
 (ns naphthalimide.alpha-test
   (:require [clojure.test :refer :all]
+            matcher-combinators.test
             [naphthalimide.alpha :as trace]
             [naphthalimide.alpha.span :as span]
             [naphthalimide.alpha.tracer.mock :as mock]
             ))
-
 
 
 (defn demo-span-fn
@@ -18,8 +18,8 @@
 
 
 (trace/defn traced-fn-1
-  ([a b]
-    (+ a b)))
+  [a b]
+  (+ a b))
 
 
 (trace/defn ^Number traced-fn-2
@@ -35,6 +35,44 @@
 (trace/defn traced-fn-3
   [[a b] {:keys [c d]}]
   (list a b c d))
+
+
+(deftest test-span
+  (are [form expected]
+    (trace/with-tracer (mock/tracer)
+      (try form (catch Exception _ nil))
+      (is (match? expected (mock/finished-spans (trace/global-tracer)))))
+
+    (trace/span "a+b" {:a 1 :b 2} 3)
+    [{:operation (str `a+b)
+      :context {:trace-id integer?
+                :span-id integer?}
+      :start-micros integer?
+      :finish-micros integer?
+      :tags {:a 1
+             :b 2
+             :source.ns "naphthalimide.alpha-test"
+             :source.file "naphthalimide/alpha_test.clj"}
+      :trace-id integer?}]
+
+    (trace/span "outer" {:a {:uno "one"}}
+      (trace/span "inner" {:b {:dos "two"}}
+        "something"))
+    [{:operation (str `inner)
+      :tags {:b "{:dos \"two\"}"}}
+     {:operation (str `outer)
+      :tags {:a "{:uno \"one\"}"}}]
+
+    (trace/span "throws" {:x :y}
+      (throw (IllegalArgumentException. "Boom!")))
+    [{:operation "naphthalimide.alpha-test/throws",
+      :context map?
+      :tags {:x ":y"
+             :error true}
+      :log [{:timestamp-micros integer?
+             :fields {"error.kind" "Exception",
+                      "error.object" #(instance? IllegalArgumentException %)}}]}]
+    ))
 
 
 (deftest test-nested-traced-fns

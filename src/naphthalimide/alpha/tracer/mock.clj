@@ -10,8 +10,10 @@
   []
   (MockTracer.))
 
+
 (defprotocol ToMap
   (to-map [x]))
+
 
 (extend-type MockSpan$MockContext
   ToMap

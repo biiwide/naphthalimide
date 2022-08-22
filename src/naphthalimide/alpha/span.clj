@@ -34,12 +34,11 @@
 (extend-protocol HasActiveSpan
   Span
   (-active-span [span] span)
-  Scope
   (-active-span [^Scope scope]
-    (.span scope))
+    (throw (IllegalArgumentException. "OpenTracing no longer support returning the active Span from a Scope.")))
   ScopeManager
   (-active-span [^ScopeManager scope-mgr]
-    (-active-span (.active scope-mgr)))
+    (-active-span (.activeSpan scope-mgr)))
   Tracer
   (-active-span [^Tracer tracer]
     (.activeSpan tracer))
@@ -222,12 +221,13 @@ Example:
         ns-meta   {"source.ns"   (name (ns-name *ns*))
                    "source.file" *file*}
         source-meta (merge form-meta ns-meta)]
-    `(let [^Span  span#  (reduce-kv set-tag! ~span ~source-meta)
-           ^Scope scope# (activate span#)]
-       (try (do ~@body)
+    `(let [^Span  span#  (reduce-kv set-tag! ~span ~source-meta)]
+       (try
+         (with-open [^Scope scope# (activate span#)]
+           ~@body)
          (catch Throwable t#
            (fail-with! span# t#)
            (throw t#))
          (finally
-           (.close scope#))))))
+           (.finish span#))))))
 

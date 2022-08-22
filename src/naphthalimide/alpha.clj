@@ -27,7 +27,6 @@
             binding)))
 
 
-
 (clj/defn- meta-from
   [expr meta-source]
   (vary-meta expr merge
@@ -41,7 +40,6 @@
     (str sym)
     (recur (symbol (str (ns-name *ns*))
                    (name sym)))))
-
 
 
 (clj/defmacro span
@@ -119,15 +117,15 @@ The tag names will be available for use within the body."
 (definline* set-tag!
   "Sets a tag on the active span."
   [key value]
-  `(if-some [span# (span/active)]
-            (span/set-tag! span# ~key ~value)))
+  `(when-some [span# (span/active)]
+     (span/set-tag! span# ~key ~value)))
 
 
 (definline* set-baggage-item!
   "Sets a baggage item on the active span."
   [key value]
-  `(if-some [span# (span/active)]
-            (span/set-baggage-item! span# ~key ~value)))
+  `(when-some [span# (span/active)]
+     (span/set-baggage-item! span# ~key ~value)))
   
 
 (comment
@@ -149,7 +147,6 @@ The tag names will be available for use within the body."
   ;; Register a Jaeger Tracer configured from environment
   (register-global-tracer!
     (com.uber.jaeger.Configuration/fromEnv))
-
   
   ;; Sample Recursive functions with randomized
   ;; execution time.
@@ -162,5 +159,4 @@ The tag names will be available for use within the body."
                    ([a b & more]
                      (reduce f2 a (cons b more))))]
      (f2 1 2 3 4 5 6 7))
-
   )
