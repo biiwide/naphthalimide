@@ -1,10 +1,8 @@
-(ns naphthalimide.alpha-test
+(ns naphthalimide.beta-test
   (:require [clojure.test :refer :all]
-            [naphthalimide.alpha :as trace]
+            [naphthalimide.beta :as trace]
             [naphthalimide.alpha.span :as span]
-            [naphthalimide.alpha.tracer :as tracer]
-            [naphthalimide.alpha.tracer.mock :as mock]
-            ))
+            [naphthalimide.alpha.tracer.mock :as mock]))
 
 
 
@@ -38,17 +36,6 @@
   (list a b c d))
 
 
-(deftest test-traced-fns
-  (are [invocation expected-spans]
-    (trace/with-tracer (mock/tracer)
-      (try invocation (catch Exception _ nil))
-      (is (= expected-spans
-             (mock/finished-spans (tracer/global-tracer)))))
-
-    (traced-fn-1 1 2) []
-    ))
-
-
 (deftest test-nested-traced-fns
   (let [fn1 (trace/fn fn1 [a b] (+ a b))
         fn2 (trace/fn fn2
@@ -56,11 +43,12 @@
               ([a b & more] (reduce fn1 a (cons b more))))]
     (are [expected xform expr]
       (let [tracer (mock/tracer)]
-        (try expr (catch Exception e nil))
-        (= expected
-           (map xform (mock/finished-spans tracer))))
+        (trace/with-tracer tracer
+          (try expr (catch Exception e nil))
+          (is (= expected
+                 (map xform (mock/finished-spans tracer))))))
 
-      nil identity (traced-fn-1 :a :b)
+      [] identity (traced-fn-1 1 2)
       )))
 
 
