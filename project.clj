@@ -7,7 +7,8 @@
   :license {:name "Eclipse Public License 2.0"
             :url "https://www.eclipse.org/legal/epl-2.0"}
 
-  :plugins [[lein-ancient "1.0.0-RC3"]]
+  :plugins [[lein-ancient "1.0.0-RC3"]
+            [lein-cloverage "1.2.4"]]
 
   :dependencies [[io.opentracing/opentracing-api "0.33.0"]
                  [io.opentracing/opentracing-util "0.33.0"]

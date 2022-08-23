@@ -2,48 +2,21 @@
   (:refer-clojure :exclude [defn- defn fn fn*])
   (:require [clojure.core :as clj]
             [naphthalimide.alpha.span :as span]
-            [naphthalimide.alpha.tracer :as tracer]
             [naphthalimide.internal :refer
-             [parse-fn definline*]]
+             [definline* destruct-syms meta-from parse-fn]]
             [potemkin :refer [import-vars]]))
 
 
 (import-vars
-  (naphthalimide
-    (alpha let-span log!
-           set-baggage-item!
-           set-tag! span
-           (tracer global-tracer
+  [naphthalimide
+    [alpha let-span
+           span
+           [tracer global-tracer
                    register-global-tracer!
-                   with-tracer))))
+                   with-tracer]]])
 
 
 (def active-span span/active)
-
-
-(clj/defn- destruct-syms
-  [binding]
-  (remove #{'&}
-          ((clj/fn syms [x]
-             (cond (symbol? x) [x]
-                   (coll? x)   (mapcat syms x)))
-            binding)))
-
-
-
-(clj/defn- meta-from
-  [expr meta-source]
-  (vary-meta expr merge
-             (meta meta-source)))
-
-
-(clj/defn- namespaced-name
-  [sym]
-  (if (and (instance? clojure.lang.Named sym)
-           (some? (namespace sym)))
-    (str sym)
-    (recur (symbol (str (ns-name *ns*))
-                   (name sym)))))
 
 
 (clj/defmacro fn
@@ -57,8 +30,11 @@
          ~@(for [arity arities]
              (let [[argv & body] arity]
                (meta-from `(~argv
-                             ~(meta-from `(let-span ~fn-name ~(vec (mapcat (partial repeat 2)
-                                                                           (destruct-syms argv)))
+                             ~(meta-from `(let-span ~fn-name
+                                                    ~(vec (mapcat (clj/fn [arg]
+                                                                    (when-some [t (::tag (meta arg))]
+                                                                      [(if (symbol? t) t arg) arg]))
+                                                                  (destruct-syms argv)))
                                                 ~@body)
                                          arity))
                           arity))))
@@ -74,6 +50,33 @@
                     (fn ~name ~@(map #(vary-meta % (constantly nil))
                                      arities)))
                  &form))))
+
+
+(definline* log!
+  "Adds a log entry to either the provided span or the active span."
+  ([map-or-message]
+   `(when-some [span# (span/active)]
+      (log! span# ~map-or-message)))
+  ([span map-or-message]
+   `(span/log! ~span ~map-or-message)))
+
+
+(definline* set-tag!
+  "Sets a tag on either the provided span or the active span."
+  ([key value]
+   `(when-some [span# (span/active)]
+      (set-tag! span# ~key ~value)))
+  ([span key value]
+   `(span/set-tag! ~span ~key ~value)))
+
+
+(definline* set-baggage-item!
+  "Sets a baggage item on the active span."
+  ([key value]
+   `(when-some [span# (span/active)]
+      (set-baggage-item! span# ~key ~value)))
+  ([span key value]
+   `(span/set-baggage-item! ~span ~key ~value)))
 
 
 (comment
@@ -108,5 +111,4 @@
                    ([a b & more]
                      (reduce f2 a (cons b more))))]
      (f2 1 2 3 4 5 6 7))
-
   )

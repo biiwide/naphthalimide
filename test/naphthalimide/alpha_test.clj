@@ -25,7 +25,7 @@
       (try form (catch Exception _ nil))
       (is (match? expected (mock/finished-spans (trace/global-tracer)))))
 
-    (trace/span "a+b" {:a 1 :b 2} 3)
+    (is (= 3 (trace/span "a+b" {:a 1 :b 2} 3)))
     [{:operation (str `a+b)
       :context {:trace-id integer?
                 :span-id integer?}
@@ -37,16 +37,18 @@
              :source.file "naphthalimide/alpha_test.clj"}
       :trace-id integer?}]
 
-    (trace/span "outer" {:a {:uno "one"}}
-      (trace/span "inner" {:b {:dos "two"}}
-        "something"))
+    (is (= "something"
+           (trace/span "outer" {:a {:uno "one"}}
+             (trace/span "inner" {:b {:dos "two"}}
+               "something"))))
     [{:operation (str `inner)
       :tags {:b "{:dos \"two\"}"}}
      {:operation (str `outer)
       :tags {:a "{:uno \"one\"}"}}]
 
-    (trace/span "throws" {:x :y}
-      (throw (IllegalArgumentException. "Boom!")))
+    (is (thrown? IllegalArgumentException
+          (trace/span "throws" {:x :y}
+            (throw (IllegalArgumentException. "Boom!")))))
     [{:operation "naphthalimide.alpha-test/throws",
       :context map?
       :tags {:x ":y"
@@ -54,6 +56,38 @@
       :log [{:timestamp-micros integer?
              :fields {"error.kind" "Exception",
                       "error.object" #(instance? IllegalArgumentException %)}}]}]
+    ))
+
+
+(deftest test-let-span
+  (are [form expected]
+    (trace/with-tracer (mock/tracer)
+      (try form (catch Exception _ nil))
+      (is (match? expected (mock/finished-spans (trace/global-tracer)))))
+
+    (is (= 3 (trace/let-span "+ab" [a 1 b 2] (+ a b))))
+    [{:operation (str `+ab)
+      :context {:trace-id integer?
+                :span-id integer?}
+      :start-micros integer?
+      :finish-micros integer?
+      :tags {:a 1
+             :b 2
+             :source.ns "naphthalimide.alpha-test"
+             :source.file "naphthalimide/alpha_test.clj"}
+      :trace-id integer?}]
+
+    (is (= 4 (trace/let-span "ab++" [a 1 b (+ a 2)] (+ a b))))
+    [{:operation (str `ab++)
+      :tags {:a 1
+             :b 3}}]
+    (is (= 10 (trace/let-span "a" [a 2]
+                (trace/let-span "b" [b (+ a 3)]
+                  (* a b)))))
+    [{:operation (str `b)
+      :tags {:b 5}}
+     {:operation (str `a)
+      :tags {:a 2}}]
     ))
 
 
@@ -84,14 +118,15 @@
       (is (match? expected-spans
                   (mock/finished-spans (tracer/global-tracer)))))
 
-    (traced-fn-1 1 2)
+    (is (= 3 (traced-fn-1 1 2)))
     [{:operation (str `traced-fn-1)
       :tags {:a 1
              :b 2
              :source.ns "naphthalimide.alpha-test"
              :source.file "naphthalimide/alpha_test.clj"}}]
 
-    (traced-fn-1 "x" "y")
+    (is (thrown? ClassCastException
+          (traced-fn-1 "x" "y")))
     [{:operation (str `traced-fn-1)
       :tags {:a "x"
              :b "y"
@@ -101,18 +136,18 @@
       :log [{:fields {"error.kind" "Exception"
                       "error.object" #(instance? ClassCastException %)}}]}]
 
-    (traced-fn-2)
+    (is (= (traced-fn-2) 0))
     [{:operation (str `traced-fn-2)
       :tags (m/equals {:source.ns string?
                        :source.file string?})}]
 
-    (traced-fn-2 :just-a)
+    (is (= :just-a (traced-fn-2 :just-a)))
     [{:operation (str `traced-fn-2)
       :tags (m/equals {:a ":just-a"
                        :source.ns string?
                        :source.file string?})}]
 
-    (traced-fn-2 8 9)
+    (is (= 17 (traced-fn-2 8 9)))
     [{:operation (str `traced-fn-1)
       :tags {:a 8
              :b 9}}
@@ -122,7 +157,7 @@
                        :source.ns string?
                        :source.file string?})}]
 
-    (traced-fn-2 1 2 3 4)
+    (is (= 10 (traced-fn-2 1 2 3 4)))
     [{:operation (str `traced-fn-1)
       :tags {:a 1 :b 2}}
      {:operation (str `traced-fn-1)
@@ -136,7 +171,8 @@
                        :source.ns string?
                        :source.file string?})}]
 
-    (traced-fn-3 [1 2] {:c 3 :d 4})
+    (is (= [1 2 3 4]
+           (traced-fn-3 [1 2] {:c 3 :d 4})))
     [{:operation (str `traced-fn-3)
       :tags (m/equals {:a 1 :b 2 :c 3 :d 4
                        :source.ns string?

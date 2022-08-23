@@ -4,7 +4,8 @@
             [naphthalimide.alpha.span :as span]
             [naphthalimide.alpha.tracer :as tracer]
             [naphthalimide.internal :refer
-             [parse-fn definline*]]
+             [definline* destruct-syms meta-from
+              namespaced-name parse-fn]]
             [potemkin :refer [import-vars]]))
 
 
@@ -16,30 +17,6 @@
 
 
 (def active-span span/active)
-
-
-(clj/defn- destruct-syms
-  [binding]
-  (remove #{'&}
-          ((clj/fn syms [x]
-             (cond (symbol? x) [x]
-                   (coll? x)   (mapcat syms x)))
-            binding)))
-
-
-(clj/defn- meta-from
-  [expr meta-source]
-  (vary-meta expr merge
-             (meta meta-source)))
-
-
-(clj/defn- namespaced-name
-  [sym]
-  (if (and (instance? clojure.lang.Named sym)
-           (some? (namespace sym)))
-    (str sym)
-    (recur (symbol (str (ns-name *ns*))
-                   (name sym)))))
 
 
 (clj/defmacro span

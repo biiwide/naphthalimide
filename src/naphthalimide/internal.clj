@@ -52,3 +52,27 @@
                     (:arglists (meta f#)))
        (var ~name))))
 
+
+(defn destruct-syms
+  [binding]
+  (remove #{'&}
+          ((fn syms [x]
+             (cond (symbol? x) [x]
+                   (coll? x)   (mapcat syms x)))
+            binding)))
+
+
+
+(defn meta-from
+  [expr meta-source]
+  (vary-meta expr merge
+             (meta meta-source)))
+
+
+(defn namespaced-name
+  [sym]
+  (if (and (instance? clojure.lang.Named sym)
+           (some? (namespace sym)))
+    (str sym)
+    (recur (symbol (str (ns-name *ns*))
+                   (name sym)))))

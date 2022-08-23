@@ -6,6 +6,7 @@
   (:import  (io.opentracing References Scope ScopeManager
                             Span SpanContext
                             Tracer Tracer$SpanBuilder)
+            (java.util Map)
             ))
 
 
@@ -31,6 +32,7 @@
 (defprotocol HasActiveSpan
   (^io.opentracing.Span -active-span [source]))
 
+
 (extend-protocol HasActiveSpan
   Span
   (-active-span [span] span)
@@ -49,6 +51,7 @@
 (defprotocol HasContext
   (^io.opentracing.SpanContext context [x] "Return a span context"))
   
+
 (extend-protocol HasContext
   Span
   (context [^Span span] (.context span))
@@ -68,6 +71,7 @@
 (defprotocol TagValue
   (-span-set-tag [value key span])
   (-builder-with-tag [value key span-builder]))
+
 
 (extend-protocol TagValue
   Boolean
@@ -126,9 +130,9 @@
 (defn ^Span log!
   "Log data to a span"
   ([^Span span map-or-message]
-    (.log span (event map-or-message)))
+   (.log span ^Map (event map-or-message)))
   ([^Span span ^long epoch-micros map-or-message]
-    (.log span epoch-micros (event map-or-message))))
+   (.log span epoch-micros ^Map (event map-or-message))))
 
 
 (defn set-baggage-item!
