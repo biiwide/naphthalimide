@@ -1,5 +1,5 @@
 (ns naphthalimide.beta-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [are deftest is]]
             [matcher-combinators.matchers :as m]
             matcher-combinators.test
             [naphthalimide.alpha.tracer :as tracer]
@@ -96,10 +96,12 @@
   ([a] a)
   ([^::trace/tag a ^::trace/tag b]
     (traced-fn-1 a b))
-  ([^{::trace/tag aa} a
-    ^{::trace/tag bb} b
-    & ^{::trace/tag others} more]
-    (reduce traced-fn-1 a (cons b more))))
+  ([^{::trace/tag aa} a1
+    ^{::trace/tag bb} b1
+    & ^{:abc 123
+        ::trace/tag others
+        :some "Thing"} more]
+    (reduce traced-fn-1 a1 (cons b1 more))))
 
 
 (trace/defn traced-fn-3

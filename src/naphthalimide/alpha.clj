@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [defn- defn fn fn*])
   (:require [clojure.core :as clj]
             [naphthalimide.alpha.span :as span]
-            [naphthalimide.alpha.tracer :as tracer]
+            naphthalimide.alpha.tracer
             [naphthalimide.internal :refer
              [definline* destruct-syms meta-from
               namespaced-name parse-fn]]
@@ -10,10 +10,9 @@
 
 
 (import-vars
-  (naphthalimide.alpha
-    (tracer global-tracer
-            register-global-tracer!
-            with-tracer)))
+  (naphthalimide.alpha.tracer global-tracer
+                              register-global-tracer!
+                              with-tracer))
 
 
 (def active-span span/active)

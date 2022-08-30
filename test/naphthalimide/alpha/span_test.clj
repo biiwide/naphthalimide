@@ -1,5 +1,5 @@
 (ns naphthalimide.alpha.span-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [are deftest is]]
             [naphthalimide.alpha.span :as span]
             [naphthalimide.alpha.tracer :as tracer]
             [naphthalimide.alpha.tracer.mock :as mock]

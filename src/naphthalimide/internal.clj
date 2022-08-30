@@ -15,12 +15,12 @@
 (defmacro definline*
   "Multi-arity form of clojure.core/definline"
   [name & decl]
-  (let [{:keys [prelude arities]} (parse-fn decl)]
+  (let [{:keys [prelude arities]} (parse-fn decl)
+        macro (eval (cons `fn arities))]
     `(do
        (defn ~name ~@prelude
-         ~@(let [macro (eval (cons `fn arities))]
-             (for [[argv] arities]
-               (list argv (apply macro argv)))))
+         ~@(for [[argv] arities]
+             (list argv (apply macro argv))))
        (alter-meta! (var ~name) assoc :inline (fn ~name ~@arities))
        (var ~name))))
 

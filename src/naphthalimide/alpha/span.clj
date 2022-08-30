@@ -15,11 +15,6 @@
   `(instance? Throwable ~x))
 
 
-(definline ^:private tracer?
-  [x]
-  `(instance? Tracer ~x))
-
-
 (def ^:dynamic *sequence-length* 3)
 
 
@@ -36,7 +31,8 @@
 (extend-protocol HasActiveSpan
   Span
   (-active-span [span] span)
-  (-active-span [^Scope scope]
+  Scope
+  (-active-span [_scope]
     (throw (IllegalArgumentException. "OpenTracing no longer support returning the active Span from a Scope.")))
   ScopeManager
   (-active-span [^ScopeManager scope-mgr]
@@ -109,8 +105,8 @@
 (defn set-tag!
   "Sets a tag on an existing span."
   [^Span span tag-key tag-val]
-  (do (-span-set-tag tag-val (name tag-key) span)
-      span))
+  (-span-set-tag tag-val (name tag-key) span)
+  span)
 
 
 (defn ^java.util.Map event

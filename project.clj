@@ -17,10 +17,14 @@
 
   :global-vars {*warn-on-reflection* true}
   
+  :aliases {"kondo"
+            ["with-profile" "clj-kondo" "run" "-m" "clj-kondo.main" "--lint" "src:test" "--copy-configs"]}
+
   :profiles {:dev {:dependencies [[com.uber.jaeger/jaeger-core "0.27.0"]
                                   [io.opentracing/opentracing-mock "0.33.0"]
-                                  [nubank/matcher-combinators "3.5.0"]]
-                   }}
+                                  [nubank/matcher-combinators "3.5.0"]]}
+             :clj-kondo {:dependencies ^:replace [[clj-kondo "2022.08.03"]]}}
+
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]

@@ -1,9 +1,8 @@
 (ns naphthalimide.alpha-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [are deftest is]]
             [matcher-combinators.matchers :as m]
             matcher-combinators.test
             [naphthalimide.alpha :as trace]
-            [naphthalimide.alpha.span :as span]
             [naphthalimide.alpha.tracer :as tracer]
             [naphthalimide.alpha.tracer.mock :as mock]
             ))
@@ -12,11 +11,11 @@
 (defn demo-span-fn
   [a b c]
   (trace/let-span outer-span
-              [{:keys [x y]} a
-               b b]
+    [{:keys [x y]} a
+     b b]
     (trace/let-span inner-span
-                [b b c c]
-      (str a b c))))
+      [b b c c]
+      (str a b c x y))))
 
 
 (deftest test-span

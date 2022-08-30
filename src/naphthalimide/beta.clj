@@ -1,19 +1,19 @@
 (ns naphthalimide.beta
   (:refer-clojure :exclude [defn- defn fn fn*])
   (:require [clojure.core :as clj]
+            naphthalimide.alpha
             [naphthalimide.alpha.span :as span]
+            naphthalimide.alpha.tracer
             [naphthalimide.internal :refer
              [definline* destruct-syms meta-from parse-fn]]
             [potemkin :refer [import-vars]]))
 
 
 (import-vars
-  [naphthalimide
-    [alpha let-span
-           span
-           [tracer global-tracer
-                   register-global-tracer!
-                   with-tracer]]])
+  (naphthalimide.alpha let-span span)
+  (naphthalimide.alpha.tracer global-tracer
+                              register-global-tracer!
+                              with-tracer))
 
 
 (def active-span span/active)
