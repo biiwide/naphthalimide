@@ -4,45 +4,55 @@ Idiomatic Clojure support for OpenTracing.
 
 ## Usage
 
+### Dependency information
+
+```clojure
+[biiwide/naphthalimide "0.0.4"]
 ```
-(require '[naphthalimide.alpha :as trace])
+
+### Sample Usage
+
+```clojure
+(require '[naphthalimide.beta :as trace])
 ```
 
 An anonymous, traced function:
 
-```
+```clojure
 (let [f (trace/fn important
-          [a b]
+          [^::trace/tag a b]
           (+ a b))]
   (f 1 2))
 ```
-All function arguments will be passed as tags.
+
+Function arguments annotaed with :naphthalimide.beta/tag will be
+added to the span as tags.
 
 A defined, traced function:
 
-```
+```clojure
 (trace/defn my-traced-function
   "Documentation..."
-  ([a] a)
-  ([a b] (+ a b))
+  ([^::trace/tag a] a)
+  ([^::trace/tag a ^::trace/tag b] (+ a b)))
 ```
 
-A traced section of code:
+A traced block of code:
 
-```
+```clojure
 (fn [a b]
-  (trace/span my-inline-span
-              [c (str a b)
-               d (str b a)]
-    [c d]))
+  (trace/let-span my-inline-span
+                  [c (str a b)
+		   d (str b a)]
+    (list c d)))
 ```
 
-The span will be tagged with `c` and `d`.
+The span `my-inline-span` will be created and tagged with `c` and `d`.
 
 
 ## License
 
-Copyright © 2018 Theodore Cushman
+Copyright © 2022 Theodore Cushman
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

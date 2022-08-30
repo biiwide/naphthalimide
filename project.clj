@@ -27,10 +27,13 @@
 
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
+                  ["file-replace" "README.md"
+                   "\\[biiwide/naphthalimide \"" "\"]"
+                   "version"]
                   ["vcs" "commit"]
                   ["vcs" "tag" "--no-sign"]
                   ["deploy" "clojars"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]
-                  ["vcs" "push"]]  
+                  ["vcs" "push"]]
   )
