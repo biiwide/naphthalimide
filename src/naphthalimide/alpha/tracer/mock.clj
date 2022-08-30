@@ -20,7 +20,7 @@
   (to-map [^MockSpan$MockContext ctxt]
     (cond-> {:trace-id (.traceId ctxt)
              :span-id  (.spanId ctxt)}
-      (not (empty? (.baggageItems ctxt)))
+      (seq (.baggageItems ctxt))
       (assoc :baggage  (into {} (.baggageItems ctxt))))))
   
 
@@ -53,14 +53,14 @@
       (not (zero? (.parentId span)))
       (assoc :parent-id (.parentId span))
 
-      (not (empty? (.logEntries span)))
+      (seq (.logEntries span))
       (assoc :log (map to-map (.logEntries span)))
 
-      (not (empty? (.references span)))
+      (seq (.references span))
       (assoc :references (map to-map (.references span)))
 
-      (not (empty? (.generatedErrors span)))
-      (assoc :generated-errors (.generatedErrors span))
+      (seq (.generatedErrors span))
+      (assoc :generated-errors (seq (.generatedErrors span)))
       )))
 
 
@@ -68,5 +68,4 @@
   [^MockTracer tracer]
   (mapv to-map
         (.finishedSpans tracer)))
-
 

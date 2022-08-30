@@ -6,17 +6,13 @@
   (:import  (io.opentracing References Scope ScopeManager
                             Span SpanContext
                             Tracer Tracer$SpanBuilder)
+            (java.util Map)
             ))
 
 
 (definline ^:private throwable?
   [x]
   `(instance? Throwable ~x))
-
-
-(definline ^:private tracer?
-  [x]
-  `(instance? Tracer ~x))
 
 
 (def ^:dynamic *sequence-length* 3)
@@ -31,10 +27,12 @@
 (defprotocol HasActiveSpan
   (^io.opentracing.Span -active-span [source]))
 
+
 (extend-protocol HasActiveSpan
   Span
   (-active-span [span] span)
-  (-active-span [^Scope scope]
+  Scope
+  (-active-span [_scope]
     (throw (IllegalArgumentException. "OpenTracing no longer support returning the active Span from a Scope.")))
   ScopeManager
   (-active-span [^ScopeManager scope-mgr]
@@ -49,6 +47,7 @@
 (defprotocol HasContext
   (^io.opentracing.SpanContext context [x] "Return a span context"))
   
+
 (extend-protocol HasContext
   Span
   (context [^Span span] (.context span))
@@ -68,6 +67,7 @@
 (defprotocol TagValue
   (-span-set-tag [value key span])
   (-builder-with-tag [value key span-builder]))
+
 
 (extend-protocol TagValue
   Boolean
@@ -105,8 +105,8 @@
 (defn set-tag!
   "Sets a tag on an existing span."
   [^Span span tag-key tag-val]
-  (do (-span-set-tag tag-val (name tag-key) span)
-      span))
+  (-span-set-tag tag-val (name tag-key) span)
+  span)
 
 
 (defn ^java.util.Map event
@@ -126,9 +126,9 @@
 (defn ^Span log!
   "Log data to a span"
   ([^Span span map-or-message]
-    (.log span (event map-or-message)))
+   (.log span ^Map (event map-or-message)))
   ([^Span span ^long epoch-micros map-or-message]
-    (.log span epoch-micros (event map-or-message))))
+   (.log span epoch-micros ^Map (event map-or-message))))
 
 
 (defn set-baggage-item!

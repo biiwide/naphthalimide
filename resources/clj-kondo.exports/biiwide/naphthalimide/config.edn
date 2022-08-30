@@ -1,0 +1,11 @@
+{:analysis {:context true
+            :keywords true}
+ :hooks {:analyze-call {naphthalimide.alpha/defn     naphthalimide.hooks/analyze-defn
+                        naphthalimide.alpha/fn       naphthalimide.hooks/analyze-fn
+                        naphthalimide.alpha/let-span naphthalimide.hooks/analyze-let-span
+                        naphthalimide.alpha/span     naphthalimide.hooks/analyze-span
+                        naphthalimide.beta/defn      naphthalimide.hooks/analyze-beta-defn
+                        naphthalimide.beta/fn        naphthalimide.hooks/analyze-beta-fn
+                        naphthalimide.beta/let-span  naphthalimide.hooks/analyze-let-span
+                        naphthalimide.beta/span      naphthalimide.hooks/analyze-span}}
+ :lint-as {naphthalimide.internal/definline* clojure.core/defmacro}}

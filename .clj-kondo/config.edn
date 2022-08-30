@@ -1,0 +1,10 @@
+{:config-paths ["../resources/clj-kondo.exports/biiwide/naphthalimide/"]
+ :linters {:non-arg-vec-return-type-hint
+           {:level :off}
+
+           :unresolved-symbol
+           {:exclude [(clojure.test/is [match?])]}
+
+           :unsorted-required-namespaces
+           {:level :warn}}
+ :skip-comments true}

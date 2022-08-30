@@ -1,53 +1,22 @@
-(ns naphthalimide.alpha
+(ns naphthalimide.beta
   (:refer-clojure :exclude [defn- defn fn fn*])
   (:require [clojure.core :as clj]
+            naphthalimide.alpha
             [naphthalimide.alpha.span :as span]
             naphthalimide.alpha.tracer
             [naphthalimide.internal :refer
-             [definline* destruct-syms meta-from
-              namespaced-name parse-fn]]
+             [definline* destruct-syms meta-from parse-fn]]
             [potemkin :refer [import-vars]]))
 
 
 (import-vars
+  (naphthalimide.alpha let-span span)
   (naphthalimide.alpha.tracer global-tracer
                               register-global-tracer!
                               with-tracer))
 
 
 (def active-span span/active)
-
-
-(clj/defmacro span
-  "Denotes a block of code as a span.
-The tag-binding may include any values to be used for tags.
-The tag names will be available for use within the body."
-  [span-name tag-map & body]
-  (let [[tag-map body] (if (or (not (map? tag-map))
-                               (empty? body))
-                         [[] (cons tag-map body)]
-                         [tag-map body])]
-    `(span/within-scope (span/start ~(namespaced-name span-name)
-                                    (span/with-tags ~tag-map))
-       ~@body)))
-
-
-(clj/defmacro let-span
-  "Denotes a block of code as a span.
-The tag-binding may include any values to be used for tags.
-The tag names will be available for use within the body."
-  [span-name tag-bindings & body]
-  (let [[tag-bindings body] (if (or (not (vector? tag-bindings))
-                                    (empty? body))
-                              [[] (cons tag-bindings body)]
-                              [tag-bindings body])
-        tag-names (destruct-syms
-                    (keys (apply hash-map tag-bindings)))]
-    `(let [~@(remove #{'&} tag-bindings)]
-       (span ~span-name
-             ~(zipmap (map name tag-names)
-                      tag-names)
-             ~@body))))
 
 
 (clj/defmacro fn
@@ -61,8 +30,11 @@ The tag names will be available for use within the body."
          ~@(for [arity arities]
              (let [[argv & body] arity]
                (meta-from `(~argv
-                             ~(meta-from `(let-span ~fn-name ~(vec (mapcat (partial repeat 2)
-                                                                           (destruct-syms argv)))
+                             ~(meta-from `(let-span ~fn-name
+                                                    ~(vec (mapcat (clj/fn [arg]
+                                                                    (when-some [t (::tag (meta arg))]
+                                                                      [(if (symbol? t) t arg) arg]))
+                                                                  (destruct-syms argv)))
                                                 ~@body)
                                          arity))
                           arity))))
@@ -81,28 +53,31 @@ The tag names will be available for use within the body."
 
 
 (definline* log!
-  "Adds a log entry to the active span."
+  "Adds a log entry to either the provided span or the active span."
   ([map-or-message]
-    `(if-some [span# (span/active)]
-              (span/log! span# ~map-or-message)))
-  ([epoch-micros map-or-message]
-    `(if-some [span# (span/active)]
-              (span/log! span# ~epoch-micros ~map-or-message))))
+   `(when-some [span# (span/active)]
+      (log! span# ~map-or-message)))
+  ([span map-or-message]
+   `(span/log! ~span ~map-or-message)))
 
 
 (definline* set-tag!
-  "Sets a tag on the active span."
-  [key value]
-  `(when-some [span# (span/active)]
-     (span/set-tag! span# ~key ~value)))
+  "Sets a tag on either the provided span or the active span."
+  ([key value]
+   `(when-some [span# (span/active)]
+      (set-tag! span# ~key ~value)))
+  ([span key value]
+   `(span/set-tag! ~span ~key ~value)))
 
 
 (definline* set-baggage-item!
   "Sets a baggage item on the active span."
-  [key value]
-  `(when-some [span# (span/active)]
-     (span/set-baggage-item! span# ~key ~value)))
-  
+  ([key value]
+   `(when-some [span# (span/active)]
+      (set-baggage-item! span# ~key ~value)))
+  ([span key value]
+   `(span/set-baggage-item! ~span ~key ~value)))
+
 
 (comment
   ;; Register a Jaeger Tracer
@@ -123,6 +98,7 @@ The tag names will be available for use within the body."
   ;; Register a Jaeger Tracer configured from environment
   (register-global-tracer!
     (com.uber.jaeger.Configuration/fromEnv))
+
   
   ;; Sample Recursive functions with randomized
   ;; execution time.

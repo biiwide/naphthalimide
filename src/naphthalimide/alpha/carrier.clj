@@ -70,7 +70,7 @@
                         tracer
                         (span/active tracer)))
   ([carrier-format-name ^Tracer tracer ^Span span]
-    (if-some [{:keys [format init final]} (carrier-format carrier-format-name)]
+    (when-some [{:keys [format init final]} (carrier-format carrier-format-name)]
       (let [carrier (init)]
         (.inject tracer (span/context span) format carrier)
         (final carrier)))))
@@ -80,6 +80,6 @@
   ([carrier-format-name carrier]
     (extract-context carrier-format-name carrier (tracer/global-tracer)))
   ([carrier-format-name carrier ^Tracer tracer]
-    (if-some [{:keys [format init]} (carrier-format carrier-format-name)]
+    (when-some [{:keys [format init]} (carrier-format carrier-format-name)]
       (.extract tracer format (init carrier)))))
 
