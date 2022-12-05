@@ -73,3 +73,8 @@
       "ratio"  1/3  1/3
       :vector  [1 2 3 4] "[1 2 3 ...]"
       )))
+
+
+(deftest test-finish!
+  (tracer/with-tracer (mock/tracer)
+    (is (span/finish! (span/start "test")))))

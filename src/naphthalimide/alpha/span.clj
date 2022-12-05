@@ -202,7 +202,7 @@ Example:
 (defn ^io.opentracing.Span finish!
   [^Span span]
   (doto span
-    (.finish span)))
+    (.finish)))
 
 
 (defn ^io.opentracing.Span fail-with!
