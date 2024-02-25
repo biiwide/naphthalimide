@@ -138,14 +138,13 @@
 (defn analyze-beta-defn
   [{:keys [node ns] :as input}]
   (let [[fn-name & more] (rest (:children node))
-        [doc & more] (if (api/string-node? (first more))
-                       more
-                       (cons (api/token-node "") more))]
+        more (if (api/string-node? (first more))
+               (rest more)
+               more)]
     (assoc input :node
            (with-meta (api/list-node
                         [(api/token-node 'clojure.core/def)
                          fn-name
-                         doc
                          (with-meta (api/list-node
                                       (list* (api/token-node 'naphthalimide.beta/fn)
                                              fn-name
