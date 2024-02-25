@@ -1,15 +1,21 @@
 (ns naphthalimide.internal)
 
 
+(defn meta-from
+  [expr meta-source]
+  (vary-meta expr (partial merge (meta meta-source))))
+
+
 (defn parse-fn
   [fn-form]
-  (if (empty? (filter vector? fn-form))
+  (if (some vector? fn-form)
+    (let [not-vec? (complement vector?)
+          arity (drop-while not-vec? fn-form)]
+      {:prelude (take-while not-vec? fn-form)
+       :arities (list (with-meta arity (some meta arity)))})
     (let [not-seq? (complement seq?)]
       {:prelude (take-while not-seq? fn-form)
-       :arities (drop-while not-seq? fn-form)})
-    (let [not-vec? (complement vector?)]
-      {:prelude (take-while not-vec? fn-form)
-       :arities (list (drop-while not-vec? fn-form))})))
+       :arities (drop-while not-seq? fn-form)})))
 
 
 (defmacro definline*
@@ -61,12 +67,6 @@
                    (coll? x)   (mapcat syms x)))
             binding)))
 
-
-
-(defn meta-from
-  [expr meta-source]
-  (vary-meta expr merge
-             (meta meta-source)))
 
 
 (defn namespaced-name

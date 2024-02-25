@@ -14,7 +14,7 @@
   :dependencies [[io.opentracing/opentracing-api "0.33.0"]
                  [io.opentracing/opentracing-util "0.33.0"]
                  [org.clojure/clojure "1.10.3" :scope "provided"]
-                 [potemkin "0.4.5"]]
+                 [potemkin "0.4.7"]]
 
   :global-vars {*warn-on-reflection* true}
   
@@ -23,8 +23,9 @@
 
   :profiles {:dev {:dependencies [[com.uber.jaeger/jaeger-core "0.27.0"]
                                   [io.opentracing/opentracing-mock "0.33.0"]
-                                  [nubank/matcher-combinators "3.5.0"]]}
-             :clj-kondo {:dependencies ^:replace [[clj-kondo "2022.08.03"]]}}
+                                  [nubank/matcher-combinators "3.9.1"]
+                                  [cloverage "1.2.4"]]}
+             :clj-kondo {:dependencies ^:replace [[clj-kondo "2024.02.12"]]}}
 
   :release-tasks [["vcs" "assert-committed"]
                   ["change" "version" "leiningen.release/bump-version" "release"]

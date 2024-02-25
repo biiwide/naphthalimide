@@ -27,9 +27,12 @@ The tag names will be available for use within the body."
                                (empty? body))
                          [[] (cons tag-map body)]
                          [tag-map body])]
-    `(span/within-scope (span/start ~(namespaced-name span-name)
-                                    (span/with-tags ~tag-map))
-       ~@body)))
+    (macroexpand-1
+      (meta-from
+        `(span/within-scope (span/start ~(namespaced-name span-name)
+                                        (span/with-tags ~tag-map))
+           ~@body)
+        &form))))
 
 
 (clj/defmacro let-span
@@ -44,10 +47,13 @@ The tag names will be available for use within the body."
         tag-names (destruct-syms
                     (keys (apply hash-map tag-bindings)))]
     `(let [~@(remove #{'&} tag-bindings)]
-       (span ~span-name
-             ~(zipmap (map name tag-names)
-                      tag-names)
-             ~@body))))
+       ~(macroexpand-1
+          (meta-from
+            `(span ~span-name
+                   ~(zipmap (map name tag-names)
+                            tag-names)
+                   ~@body)
+            &form)))))
 
 
 (clj/defmacro fn
@@ -75,8 +81,10 @@ The tag names will be available for use within the body."
         (parse-fn (cons name defn-form) )]
     (binding [*print-meta* true]
       (meta-from `(def ~@prelude
-                    (fn ~name ~@(map #(vary-meta % (constantly nil))
-                                     arities)))
+                    ~(meta-from
+                       (macroexpand-1
+                         `(fn ~name ~@arities))
+                       &form))
                  &form))))
 
 

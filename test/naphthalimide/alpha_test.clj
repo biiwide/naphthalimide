@@ -115,14 +115,17 @@
     (trace/with-tracer (mock/tracer)
       (try invocation (catch Exception _ nil))
       (is (match? expected-spans
-                  (mock/finished-spans (tracer/global-tracer)))))
+                  (mock/finished-spans (tracer/global-tracer)))
+          (format "Test Case: %s" (pr-str (quote invocation)))))
 
     (is (= 3 (traced-fn-1 1 2)))
     [{:operation (str `traced-fn-1)
       :tags {:a 1
              :b 2
              :source.ns "naphthalimide.alpha-test"
-             :source.file "naphthalimide/alpha_test.clj"}}]
+             :source.file "naphthalimide/alpha_test.clj"
+             :source.line pos-int?
+             :source.column pos-int?}}]
 
     (is (thrown? ClassCastException
           (traced-fn-1 "x" "y")))
@@ -138,13 +141,17 @@
     (is (= (traced-fn-2) 0))
     [{:operation (str `traced-fn-2)
       :tags (m/equals {:source.ns string?
-                       :source.file string?})}]
+                       :source.file string?
+                       :source.line pos-int?
+                       :source.column pos-int?})}]
 
     (is (= :just-a (traced-fn-2 :just-a)))
     [{:operation (str `traced-fn-2)
       :tags (m/equals {:a ":just-a"
                        :source.ns string?
-                       :source.file string?})}]
+                       :source.file string?
+                       :source.line pos-int?
+                       :source.column pos-int?})}]
 
     (is (= 17 (traced-fn-2 8 9)))
     [{:operation (str `traced-fn-1)
@@ -154,7 +161,9 @@
       :tags (m/equals {:a 8
                        :b 9
                        :source.ns string?
-                       :source.file string?})}]
+                       :source.file string?
+                       :source.line pos-int?
+                       :source.column pos-int?})}]
 
     (is (= 10 (traced-fn-2 1 2 3 4)))
     [{:operation (str `traced-fn-1)
@@ -168,14 +177,18 @@
                        :b 2
                        :more "(3 4)"
                        :source.ns string?
-                       :source.file string?})}]
+                       :source.file string?
+                       :source.line pos-int?
+                       :source.column pos-int?})}]
 
     (is (= [1 2 3 4]
            (traced-fn-3 [1 2] {:c 3 :d 4})))
     [{:operation (str `traced-fn-3)
       :tags (m/equals {:a 1 :b 2 :c 3 :d 4
                        :source.ns string?
-                       :source.file string?})}]
+                       :source.file string?
+                       :source.line pos-int?
+                       :source.column pos-int?})}]
     ))
 
 

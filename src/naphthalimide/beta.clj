@@ -28,15 +28,20 @@
     (meta-from
       `(clj/fn ~@prelude
          ~@(for [arity arities]
-             (let [[argv & body] arity]
+             (let [[argv & body] arity
+                   tags (mapcat (clj/fn [arg]
+                                  (when-some [t (::tag (meta arg))]
+                                    [(if (symbol? t) t arg) arg]))
+                               (destruct-syms argv))]
                (meta-from `(~argv
-                             ~(meta-from `(let-span ~fn-name
-                                                    ~(vec (mapcat (clj/fn [arg]
-                                                                    (when-some [t (::tag (meta arg))]
-                                                                      [(if (symbol? t) t arg) arg]))
-                                                                  (destruct-syms argv)))
-                                                ~@body)
-                                         arity))
+                             ~(macroexpand-1
+                                (meta-from
+                                  (if (empty? tags)
+                                    `(span ~fn-name ~@body)
+                                    `(let-span ~fn-name
+                                       ~(vec tags)
+                                       ~@body))
+                                  arity)))
                           arity))))
       &form)))
 
@@ -47,16 +52,17 @@
         (parse-fn (cons name defn-form) )]
     (binding [*print-meta* true]
       (meta-from `(def ~@prelude
-                    (fn ~name ~@(map #(vary-meta % (constantly nil))
-                                     arities)))
+                    ~(macroexpand-1
+                       (meta-from `(fn ~name ~@arities) &form)))
                  &form))))
 
 
 (definline* log!
   "Adds a log entry to either the provided span or the active span."
   ([map-or-message]
-   `(when-some [span# (span/active)]
-      (log! span# ~map-or-message)))
+   (macroexpand
+     `(when-some [span# (span/active)]
+        (log! span# ~map-or-message))))
   ([span map-or-message]
    `(span/log! ~span ~map-or-message)))
 

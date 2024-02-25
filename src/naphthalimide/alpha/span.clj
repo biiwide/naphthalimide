@@ -6,8 +6,7 @@
   (:import  (io.opentracing References Scope ScopeManager
                             Span SpanContext
                             Tracer Tracer$SpanBuilder)
-            (java.util Map)
-            ))
+            (java.util Map)))
 
 
 (definline ^:private throwable?
@@ -98,8 +97,7 @@
   (-span-set-tag [value key span]
     (.setTag ^Span span ^String key ^String value))
   (-builder-with-tag [val key builder]
-    (.withTag ^Tracer$SpanBuilder builder ^String key ^String val))
-  )
+    (.withTag ^Tracer$SpanBuilder builder ^String key ^String val)))
 
 
 (defn set-tag!
@@ -119,8 +117,7 @@
                          (recur {:error.kind   "Exception"
                                  :error.object t
                                  :event        "error"
-                                 :message      (.getMessage t)}))
-        ))
+                                 :message      (.getMessage t)}))))
 
 
 (defn ^Span log!
@@ -221,7 +218,7 @@ Example:
         ns-meta   {"source.ns"   (name (ns-name *ns*))
                    "source.file" *file*}
         source-meta (merge form-meta ns-meta)]
-    `(let [^Span  span#  (reduce-kv set-tag! ~span ~source-meta)]
+    `(let [^Span span# (reduce-kv set-tag! ~span ~source-meta)]
        (try
          (with-open [^Scope scope# (activate span#)]
            ~@body)
@@ -230,4 +227,3 @@ Example:
            (throw t#))
          (finally
            (.finish span#))))))
-
