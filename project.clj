@@ -1,4 +1,4 @@
-(defproject biiwide/naphthalimide "0.0.6"
+(defproject biiwide/naphthalimide "0.0.7-SNAPSHOT"
 
   :description "Idomatic OpenTracing"
 
