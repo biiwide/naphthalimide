@@ -7,7 +7,7 @@ Idiomatic Clojure support for OpenTracing.
 ### Dependency information
 
 ```clojure
-[biiwide/naphthalimide "0.0.5"]
+[biiwide/naphthalimide "0.0.6"]
 ```
 
 ### Sample Usage
